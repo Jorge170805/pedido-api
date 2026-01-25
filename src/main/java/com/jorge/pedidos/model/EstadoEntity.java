@@ -4,6 +4,7 @@ import javax.persistence.*;
 import lombok.Data;
 
 @Entity
+@Table(name = "estado")
 @Data
 public class EstadoEntity {
     @Id
