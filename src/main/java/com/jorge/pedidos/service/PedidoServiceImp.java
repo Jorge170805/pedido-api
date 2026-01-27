@@ -1,7 +1,6 @@
 package com.jorge.pedidos.service;
 
 import com.jorge.pedidos.dto.PedidoDTO;
-import com.jorge.pedidos.dto.PedidoItemDTO;
 import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
 import com.jorge.pedidos.mapper.PedidoMapper;
 import com.jorge.pedidos.model.*;
@@ -11,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.util.List;
 
 @Service
@@ -19,6 +17,7 @@ import java.util.List;
 public class PedidoServiceImp implements PedidoService {
 
     private static final Long ID_ESTADO_PEDIDO_CREADO = 1L;
+    private static final Long ID_ESTADO_PEDIDO_CONFIRMADO = 4L;
 
     @Autowired
     private PedidoRepository pedidoRepository;
@@ -62,6 +61,7 @@ public class PedidoServiceImp implements PedidoService {
     @Override
     @Transactional
     public PedidoDTO agregarProducto(AgregarProductoPedidoRequest appr) {
+        log.info("inicio agregarProducto");
         if(appr.getCantidad() < 0) {
             throw new RuntimeException("La cantidad no puede ser 0");
         }
@@ -95,6 +95,36 @@ public class PedidoServiceImp implements PedidoService {
 
             pedido.setTotal(pedido.getTotal() + pedidoItem.getCantidad() * pedidoItem.getPrecioUnitario());
         }
+        log.info("fin agregarProducto");
+        return this.pedidoMapper.entityToDto(pedido);
+    }
+
+    @Override
+    @Transactional
+    public PedidoDTO confirmarPedido(Long idPedido) {
+        log.info("inicio confirmarPedido");
+        PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new RuntimeException("No existe el pedido con el id " + idPedido));
+        if(!pedido.getEstado().getId().equals(ID_ESTADO_PEDIDO_CREADO)){
+            throw new RuntimeException("No se puede confirmar el pedido");
+        }
+        List<PedidoItemEntity> pedidoItemEntities = pedidoItemRepository.findByPedidoId(idPedido);
+
+        if(pedidoItemEntities.isEmpty()){
+            throw new RuntimeException("No hay ningun producto en el pedido");
+        }
+
+        for(PedidoItemEntity pi : pedidoItemEntities){
+            if(pi.getCantidad() > pi.getProducto().getStock()){
+                throw new RuntimeException("No hay stock suficiente");
+            }else{
+                pi.getProducto().setStock(pi.getProducto().getStock() - pi.getCantidad());
+            }
+        }
+
+        EstadoEntity estadoConfirmado = this.estadoRepository.getReferenceById(ID_ESTADO_PEDIDO_CONFIRMADO);
+        pedido.setEstado(estadoConfirmado);
+
+        log.info("fin confirmarPedido");
         return this.pedidoMapper.entityToDto(pedido);
     }
 

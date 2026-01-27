@@ -7,4 +7,6 @@ public interface PedidoService {
     PedidoDTO crearPedido (Long idCliente);
 
     PedidoDTO agregarProducto (AgregarProductoPedidoRequest appr);
+
+    PedidoDTO confirmarPedido (Long idPedido);
 }

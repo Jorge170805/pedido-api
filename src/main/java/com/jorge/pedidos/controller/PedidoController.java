@@ -23,4 +23,9 @@ public class PedidoController {
     public PedidoDTO agregarProducto(@RequestBody AgregarProductoPedidoRequest appr) {
         return this.pedidoService.agregarProducto(appr);
     }
+
+    @PostMapping("/confirmar/{idPedido}")
+    public PedidoDTO confirmarPedido (@PathVariable Long idPedido) {
+        return this.pedidoService.confirmarPedido(idPedido);
+    }
 }
