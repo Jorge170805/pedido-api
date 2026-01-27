@@ -1,6 +1,7 @@
 package com.jorge.pedidos.service;
 
 import com.jorge.pedidos.dto.PedidoDTO;
+import com.jorge.pedidos.dto.PedidoDetalleDTO;
 import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
 
 public interface PedidoService {
@@ -9,4 +10,7 @@ public interface PedidoService {
     PedidoDTO agregarProducto (AgregarProductoPedidoRequest appr);
 
     PedidoDTO confirmarPedido (Long idPedido);
+
+    public PedidoDetalleDTO obtenerDetallePedido(Long idPedido);
+
 }

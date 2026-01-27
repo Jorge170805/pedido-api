@@ -1,6 +1,7 @@
 package com.jorge.pedidos.controller;
 
 import com.jorge.pedidos.dto.PedidoDTO;
+import com.jorge.pedidos.dto.PedidoDetalleDTO;
 import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
 import com.jorge.pedidos.service.PedidoService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,5 +28,10 @@ public class PedidoController {
     @PostMapping("/confirmar/{idPedido}")
     public PedidoDTO confirmarPedido (@PathVariable Long idPedido) {
         return this.pedidoService.confirmarPedido(idPedido);
+    }
+
+    @GetMapping("/{idPedido}")
+    public PedidoDetalleDTO obtenerDetallePedido (@PathVariable Long idPedido) {
+        return this.pedidoService.obtenerDetallePedido(idPedido);
     }
 }

@@ -1,7 +1,11 @@
 package com.jorge.pedidos.service;
 
 import com.jorge.pedidos.dto.PedidoDTO;
+import com.jorge.pedidos.dto.PedidoDetalleDTO;
 import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
+import com.jorge.pedidos.mapper.ClienteMapper;
+import com.jorge.pedidos.mapper.EstadoMapper;
+import com.jorge.pedidos.mapper.PedidoItemMapper;
 import com.jorge.pedidos.mapper.PedidoMapper;
 import com.jorge.pedidos.model.*;
 import com.jorge.pedidos.repository.*;
@@ -35,7 +39,16 @@ public class PedidoServiceImp implements PedidoService {
     private PedidoItemRepository pedidoItemRepository;
 
     @Autowired
+    private EstadoMapper estadoMapper;
+
+    @Autowired
     private PedidoMapper pedidoMapper;
+
+    @Autowired
+    private ClienteMapper clienteMapper;
+
+    @Autowired
+    private PedidoItemMapper pedidoItemMapper;
 
 
     @Override
@@ -126,6 +139,20 @@ public class PedidoServiceImp implements PedidoService {
 
         log.info("fin confirmarPedido");
         return this.pedidoMapper.entityToDto(pedido);
+    }
+
+    @Override
+    public PedidoDetalleDTO obtenerDetallePedido(Long idPedido) {
+        PedidoDetalleDTO pedidoDetalleDTO = new PedidoDetalleDTO();
+        PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new RuntimeException("No existe el pedido con el id " + idPedido));
+        pedidoDetalleDTO.setId(idPedido);
+        pedidoDetalleDTO.setEstado(this.estadoMapper.entityToDto(pedido.getEstado()));
+        pedidoDetalleDTO.setFechaCreacion(pedido.getFechaCreacion());
+        pedidoDetalleDTO.setTotal(pedido.getTotal());
+        pedidoDetalleDTO.setCliente(this.clienteMapper.entityToDto(pedido.getCliente()));
+        pedidoDetalleDTO.setItems(this.pedidoItemMapper.listEntityToListDto(this.pedidoItemRepository.findByPedidoId(idPedido)));
+
+        return pedidoDetalleDTO;
     }
 
     private PedidoItemEntity getPedidoItemEntity(Long idPedido, Long idProducto) {
