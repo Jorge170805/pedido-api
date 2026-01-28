@@ -34,4 +34,9 @@ public class PedidoController {
     public PedidoDetalleDTO obtenerDetallePedido (@PathVariable Long idPedido) {
         return this.pedidoService.obtenerDetallePedido(idPedido);
     }
+
+    @PostMapping("/cancelar/{idPedido}")
+    public PedidoDTO cancelarPedido (@PathVariable Long idPedido){
+        return this.pedidoService.cancelarPedido(idPedido);
+    }
 }

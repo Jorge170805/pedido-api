@@ -11,6 +11,9 @@ public interface PedidoService {
 
     PedidoDTO confirmarPedido (Long idPedido);
 
-    public PedidoDetalleDTO obtenerDetallePedido(Long idPedido);
+    PedidoDetalleDTO obtenerDetallePedido(Long idPedido);
+
+    PedidoDTO cancelarPedido (Long idPedido);
+
 
 }

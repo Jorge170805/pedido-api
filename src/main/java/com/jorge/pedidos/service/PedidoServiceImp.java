@@ -21,6 +21,7 @@ import java.util.List;
 public class PedidoServiceImp implements PedidoService {
 
     private static final Long ID_ESTADO_PEDIDO_CREADO = 1L;
+    private static final Long ID_ESTADO_PEDIDO_CANCELADO = 3L;
     private static final Long ID_ESTADO_PEDIDO_CONFIRMADO = 4L;
 
     @Autowired
@@ -143,16 +144,31 @@ public class PedidoServiceImp implements PedidoService {
 
     @Override
     public PedidoDetalleDTO obtenerDetallePedido(Long idPedido) {
-        PedidoDetalleDTO pedidoDetalleDTO = new PedidoDetalleDTO();
+        log.info("inicio obtenerDetallePedido");
         PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new RuntimeException("No existe el pedido con el id " + idPedido));
-        pedidoDetalleDTO.setId(idPedido);
-        pedidoDetalleDTO.setEstado(this.estadoMapper.entityToDto(pedido.getEstado()));
-        pedidoDetalleDTO.setFechaCreacion(pedido.getFechaCreacion());
-        pedidoDetalleDTO.setTotal(pedido.getTotal());
-        pedidoDetalleDTO.setCliente(this.clienteMapper.entityToDto(pedido.getCliente()));
+        PedidoDetalleDTO pedidoDetalleDTO = this.pedidoMapper.entityToDetalleDto(pedido);
         pedidoDetalleDTO.setItems(this.pedidoItemMapper.listEntityToListDto(this.pedidoItemRepository.findByPedidoId(idPedido)));
-
+        log.info("fin obtenerDetallePedido");
         return pedidoDetalleDTO;
+    }
+
+    @Transactional
+    @Override
+    public PedidoDTO cancelarPedido(Long idPedido) {
+        log.info("inicio cancelarPedido");
+        PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new RuntimeException("No existe el pedido con el id " + idPedido));
+
+        List<PedidoItemEntity> pedidoItemEntities = pedidoItemRepository.findByPedidoId(idPedido);
+
+        for(PedidoItemEntity pi : pedidoItemEntities){
+            pi.getProducto().setStock(pi.getProducto().getStock() + pi.getCantidad());
+        }
+
+        EstadoEntity estadoCancelado = this.estadoRepository.getReferenceById(ID_ESTADO_PEDIDO_CANCELADO);
+        pedido.setEstado(estadoCancelado);
+
+        log.info("fin cancelarPedido");
+        return this.pedidoMapper.entityToDto(pedido);
     }
 
     private PedidoItemEntity getPedidoItemEntity(Long idPedido, Long idProducto) {
