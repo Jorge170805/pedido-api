@@ -1,13 +1,11 @@
 package com.jorge.pedidos.dto;
 
-import com.jorge.pedidos.model.PedidoEntity;
-import com.jorge.pedidos.model.ProductoEntity;
 import lombok.Data;
+
 @Data
-public class PedidoItemDTO {
+public class PedidoItemDetalleDTO {
     private Long id;
     private ProductoDTO producto;
     private Integer cantidad;
     private Double precioUnitario;
-    private PedidoDTO pedido;
 }

@@ -2,7 +2,8 @@ package com.jorge.pedidos.controller;
 
 import com.jorge.pedidos.dto.PedidoDTO;
 import com.jorge.pedidos.dto.PedidoDetalleDTO;
-import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
+import com.jorge.pedidos.dto.request.AgregarProductoPedidoDTO;
+import com.jorge.pedidos.dto.request.EliminarProductoPedidoDTO;
 import com.jorge.pedidos.service.PedidoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,8 @@ public class PedidoController {
     }
 
     @PostMapping
-    public PedidoDTO agregarProducto(@RequestBody AgregarProductoPedidoRequest appr) {
-        return this.pedidoService.agregarProducto(appr);
+    public PedidoDTO agregarProducto(@RequestBody AgregarProductoPedidoDTO dto) {
+        return this.pedidoService.agregarProducto(dto);
     }
 
     @PostMapping("/confirmar/{idPedido}")
@@ -38,5 +39,10 @@ public class PedidoController {
     @PostMapping("/cancelar/{idPedido}")
     public PedidoDTO cancelarPedido (@PathVariable Long idPedido){
         return this.pedidoService.cancelarPedido(idPedido);
+    }
+
+    @DeleteMapping
+    public PedidoDTO eliminarProducto (@RequestBody EliminarProductoPedidoDTO dto){
+        return this.pedidoService.eliminarProducto(dto);
     }
 }

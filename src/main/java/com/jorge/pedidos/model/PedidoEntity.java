@@ -19,6 +19,9 @@ public class PedidoEntity {
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
+    @Column(name = "fecha_confirmacion")
+    private LocalDateTime fechaConfirmacion;
+
     @ManyToOne
     @JoinColumn(name = "fid_estado")
     private EstadoEntity estado;

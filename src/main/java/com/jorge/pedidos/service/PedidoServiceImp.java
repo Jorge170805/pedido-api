@@ -2,7 +2,8 @@ package com.jorge.pedidos.service;
 
 import com.jorge.pedidos.dto.PedidoDTO;
 import com.jorge.pedidos.dto.PedidoDetalleDTO;
-import com.jorge.pedidos.dto.request.AgregarProductoPedidoRequest;
+import com.jorge.pedidos.dto.request.AgregarProductoPedidoDTO;
+import com.jorge.pedidos.dto.request.EliminarProductoPedidoDTO;
 import com.jorge.pedidos.exception.BadRequestException;
 import com.jorge.pedidos.exception.BusinessException;
 import com.jorge.pedidos.exception.NotFoundException;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -67,6 +69,7 @@ public class PedidoServiceImp implements PedidoService {
 
         ClienteEntity cliente = this.clienteRepository.findById(idCliente).orElseThrow(() -> new NotFoundException("Cliente con el id " + idCliente + " no se encuentra en la base de datos"));
         pedido.setCliente(cliente);
+        pedido.setFechaConfirmacion(null);
 
         this.pedidoRepository.save(pedido);
 
@@ -77,26 +80,26 @@ public class PedidoServiceImp implements PedidoService {
 
     @Override
     @Transactional
-    public PedidoDTO agregarProducto(AgregarProductoPedidoRequest appr) {
+    public PedidoDTO agregarProducto(AgregarProductoPedidoDTO dto) {
         log.info("inicio agregarProducto");
-        if(appr.getCantidad() < 0) {
-            throw new RuntimeException("La cantidad no puede ser 0");
+        if(dto.getCantidad() < 0) {
+            throw new BusinessException("La cantidad no puede ser 0");
         }
 
-        PedidoEntity pedido = this.pedidoRepository.findById(appr.getIdPedido()).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + appr.getIdPedido()));
+        PedidoEntity pedido = this.pedidoRepository.findById(dto.getIdPedido()).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + dto.getIdPedido()));
         if(!pedido.getEstado().getId().equals(ID_ESTADO_PEDIDO_CREADO)){
-            throw new RuntimeException("No se puede modificar un pedido confirmado o cancelado");
+            throw new BusinessException("No se puede modificar un pedido confirmado o cancelado");
         }
-        ProductoEntity producto = this.productoRepository.findById(appr.getIdProducto()).orElseThrow(() -> new NotFoundException("No existe el producto con el id " + appr.getIdProducto()));
+        ProductoEntity producto = this.productoRepository.findById(dto.getIdProducto()).orElseThrow(() -> new NotFoundException("No existe el producto con el id " + dto.getIdProducto()));
 
-        PedidoItemEntity pedidoItem = this.getPedidoItemEntity(appr.getIdPedido(), appr.getIdProducto());
+        PedidoItemEntity pedidoItem = this.getPedidoItemEntity(dto.getIdPedido(), dto.getIdProducto());
 
         if(pedidoItem != null){
             // Actualizar
             System.out.println("Actualizar");
             Integer cantidadAntigua = pedidoItem.getCantidad();
             Double precioUnitarioAntiguo = pedidoItem.getPrecioUnitario();
-            pedidoItem.setCantidad(cantidadAntigua + appr.getCantidad());
+            pedidoItem.setCantidad(cantidadAntigua + dto.getCantidad());
             pedidoItem.setPrecioUnitario(producto.getPrecio());
 
             pedido.setTotal(pedido.getTotal() - cantidadAntigua * precioUnitarioAntiguo + pedidoItem.getCantidad() * pedidoItem.getPrecioUnitario());
@@ -106,19 +109,44 @@ public class PedidoServiceImp implements PedidoService {
             pedidoItem = new PedidoItemEntity();
             pedidoItem.setPedido(pedido);
             pedidoItem.setProducto(producto);
-            pedidoItem.setCantidad(appr.getCantidad());
+            pedidoItem.setCantidad(dto.getCantidad());
             pedidoItem.setPrecioUnitario(producto.getPrecio());
             this.pedidoItemRepository.save(pedidoItem);
+
 
             pedido.setTotal(pedido.getTotal() + pedidoItem.getCantidad() * pedidoItem.getPrecioUnitario());
         }
         log.info("fin agregarProducto");
         return this.pedidoMapper.entityToDto(pedido);
+
+    }
+
+    @Override
+    public PedidoDTO eliminarProducto(EliminarProductoPedidoDTO dto) {
+        log.info("inicio eliminarProducto");
+
+        PedidoEntity pedido = this.pedidoRepository.findById(dto.getIdPedido()).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + dto.getIdPedido()));
+        if(!pedido.getEstado().getId().equals(ID_ESTADO_PEDIDO_CREADO)){
+            throw new BusinessException("No se puede modificar un pedido confirmado o cancelado");
+        }
+        ProductoEntity producto = this.productoRepository.findById(dto.getIdProducto()).orElseThrow(() -> new NotFoundException("No existe el producto con el id " + dto.getIdProducto()));
+
+        PedidoItemEntity pedidoItem = this.getPedidoItemEntity(dto.getIdPedido(), dto.getIdProducto());
+
+        if(pedidoItem != null){
+            producto.setStock(producto.getStock() + pedidoItem.getCantidad());
+            pedido.setTotal(pedido.getTotal() - pedidoItem.getPrecioUnitario() * pedidoItem.getCantidad());
+            this.pedidoItemRepository.delete(pedidoItem);
+        }else{
+            throw new NotFoundException("No tiene añadido ese producto en su pedido");
+        }
+        log.info("fin eliminarProducto");
+        return this.pedidoMapper.entityToDto(pedido);
     }
 
     @Override
     @Transactional
-    public PedidoDTO confirmarPedido(Long idPedido) { 
+    public PedidoDTO confirmarPedido(Long idPedido) {
         log.info("inicio confirmarPedido");
         PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + idPedido));
         if(!pedido.getEstado().getId().equals(ID_ESTADO_PEDIDO_CREADO)){
@@ -140,6 +168,7 @@ public class PedidoServiceImp implements PedidoService {
 
         EstadoEntity estadoConfirmado = this.estadoRepository.getReferenceById(ID_ESTADO_PEDIDO_CONFIRMADO);
         pedido.setEstado(estadoConfirmado);
+        pedido.setFechaConfirmacion(LocalDateTime.now());
 
         log.info("fin confirmarPedido");
         return this.pedidoMapper.entityToDto(pedido);
@@ -150,10 +179,11 @@ public class PedidoServiceImp implements PedidoService {
         log.info("inicio obtenerDetallePedido");
         PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + idPedido));
         PedidoDetalleDTO pedidoDetalleDTO = this.pedidoMapper.entityToDetalleDto(pedido);
-        pedidoDetalleDTO.setItems(this.pedidoItemMapper.listEntityToListDto(this.pedidoItemRepository.findByPedidoId(idPedido)));
+        pedidoDetalleDTO.setItems(this.pedidoItemMapper.listEntityToListDetalleDto(this.pedidoItemRepository.findByPedidoId(idPedido)));
         log.info("fin obtenerDetallePedido");
         return pedidoDetalleDTO;
     }
+
 
     @Transactional
     @Override
@@ -161,10 +191,11 @@ public class PedidoServiceImp implements PedidoService {
         log.info("inicio cancelarPedido");
         PedidoEntity pedido = this.pedidoRepository.findById(idPedido).orElseThrow(() -> new NotFoundException("No existe el pedido con el id " + idPedido));
 
-        List<PedidoItemEntity> pedidoItemEntities = pedidoItemRepository.findByPedidoId(idPedido);
-
-        for(PedidoItemEntity pi : pedidoItemEntities){
-            pi.getProducto().setStock(pi.getProducto().getStock() + pi.getCantidad());
+        if(pedido.getEstado().equals(ID_ESTADO_PEDIDO_CONFIRMADO)){
+            List<PedidoItemEntity> pedidoItemEntities = pedidoItemRepository.findByPedidoId(idPedido);
+            for(PedidoItemEntity pi : pedidoItemEntities){
+                pi.getProducto().setStock(pi.getProducto().getStock() + pi.getCantidad());
+            }
         }
 
         EstadoEntity estadoCancelado = this.estadoRepository.getReferenceById(ID_ESTADO_PEDIDO_CANCELADO);

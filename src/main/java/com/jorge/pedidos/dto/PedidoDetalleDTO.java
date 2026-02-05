@@ -13,6 +13,7 @@ public class PedidoDetalleDTO {
     private LocalDateTime fechaCreacion;
     private Double total;
     private ClienteDTO cliente;
-    private List<PedidoItemDTO> items;
+    private List<PedidoItemDetalleDTO> items;
+
 }
 

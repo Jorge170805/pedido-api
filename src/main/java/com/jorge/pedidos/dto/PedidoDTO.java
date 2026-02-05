@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class PedidoDTO {
     private Long id;
     private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaConfirmacion;
     private EstadoDTO estado;
     private ClienteDTO cliente;
     private Double total;
