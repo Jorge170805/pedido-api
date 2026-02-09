@@ -20,6 +20,7 @@ public class PedidoItemServiceImp implements PedidoItemService {
 
     @Override
     public List<PedidoItemDTO> obtenerPedidosItems(Long pedidoId) {
+
         List<PedidoItemEntity> pedidoItemEntities = this.pedidoItemRepository.findByPedido_IdOrderByCantidadDesc(pedidoId);
         List<PedidoItemDTO> pedidoItemDTOS = this.pedidoItemMapper.listEntityToListDto(pedidoItemEntities);
         return pedidoItemDTOS;

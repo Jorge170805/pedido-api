@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class PedidoScheduler {
-
     @Autowired
     private PedidoRepository pedidoRepository;
 
